@@ -1,0 +1,1394 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B2A3A">
+<title>DemGo</title>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Mise en page : un écran plein cadre, bordure marine comme sur la maquette.
+   Accueil = tuile Dem (orange) / barre / tuile Go (jaune) / accroche.
+   Thèmes = deck de cartes à jouer en défilement horizontal. Débat = carré orange (lu à l'envers) / barre + 3 boutons / carré jaune. */
+:root {
+  --page: #E6EAEE;
+  --paper: #FFFFFF;
+  --ink: #0B2A3A;
+  --muted: #4B6272;
+  --frame: #0B2A3A;
+  --surface: #FFFFFF;
+  --soft: #E8EDF1;
+  --orange: #FF4D00;
+  --yellow: #FFDD00;
+  --hot: #12384D;
+  --on-hot: #FFFFFF;
+  --on-color: #0A1A24;
+  --font-display: 'Archivo', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-num: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #050F15; --paper: #0A1D28; --ink: #F2F6F8; --muted: #9DB3C1; --frame: #2D5468;
+    --surface: #10303F; --soft: #17394A; --hot: #2F6F94;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #050F15; --paper: #0A1D28; --ink: #F2F6F8; --muted: #9DB3C1; --frame: #2D5468;
+  --surface: #10303F; --soft: #17394A; --hot: #2F6F94;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, p, ol, ul, figure { margin: 0; }
+button, input { font: inherit; color: inherit; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
+
+.app {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  height: 100%;
+  max-height: 920px;
+  background: var(--paper);
+  border: 6px solid var(--frame);
+  overflow: hidden;
+}
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: clamp(1.45rem, 7vw, 1.85rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  flex: none;
+}
+.title:focus { outline: none; }
+.eyebrow { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.help { font-size: 0.86rem; color: var(--muted); line-height: 1.35; }
+.foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; flex: none; }
+.foot.row2 { flex-direction: row; }
+.foot.row2 .btn { flex: 1; min-height: 48px; padding-inline: 8px; }
+
+/* Boutons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 10px 18px;
+  background: var(--surface); color: var(--ink);
+  border: 4px solid var(--ink); border-radius: 0;
+  font-weight: 800; font-size: 1rem; text-align: center; text-decoration: none;
+  cursor: pointer; touch-action: manipulation;
+}
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn:active:not(:disabled) { transform: translateY(2px); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn svg { width: 20px; height: 20px; flex: none; fill: currentColor; }
+
+/* En-tête des étapes */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
+.back { width: 48px; height: 48px; padding: 0; display: grid; place-items: center; background: var(--surface); border: 4px solid var(--ink); cursor: pointer; }
+.back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: square; }
+.steps { display: flex; align-items: center; gap: 10px; }
+.pips { display: flex; gap: 6px; list-style: none; padding: 0; }
+.pips li { width: 26px; height: 12px; border: 3px solid var(--ink); }
+.pips li.on { background: var(--ink); }
+.steps .num { font-size: 0.85rem; font-weight: 700; }
+
+/* Accueil : tuiles Dem / Go */
+.home { gap: 12px; }
+.wm {
+  flex: 1 1 0; min-height: 0; padding: 16px; display: flex; align-items: center; justify-content: center;
+  background: var(--paper);
+  font-family: var(--font-display); font-weight: 900; font-stretch: 112%;
+  font-size: clamp(2.4rem, 15vw, 4.2rem); line-height: 1; letter-spacing: -0.03em; white-space: nowrap;
+}
+.wm-in { display: flex; align-items: baseline; }
+.w-dem { color: var(--yellow); }
+.w-g { color: var(--orange); }
+.logo { height: 0.75em; width: 0.77em; margin-left: 0.05em; flex: none; overflow: visible; }
+.logo .lg-o { fill: var(--orange); }
+.logo .lg-y { fill: var(--yellow); }
+.lang { position: absolute; top: 30px; right: 30px; z-index: 3; display: flex; border: 3px solid var(--ink); background: var(--paper); }
+.lang button { min-width: 48px; min-height: 44px; padding: 0 8px; background: none; border: 0; border-radius: 0; color: var(--ink); font-weight: 800; font-size: 0.9rem; letter-spacing: 0.04em; cursor: pointer; touch-action: manipulation; }
+.lang button + button { border-left: 3px solid var(--ink); }
+.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.blk-y { flex: 1 1 0; min-height: 0; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; background: var(--yellow); color: var(--on-color); }
+.pitch { font-family: var(--font-display); font-weight: 800; font-stretch: 108%; font-size: clamp(1.25rem, 6.2vw, 1.7rem); line-height: 1.15; text-wrap: balance; }
+
+/* Barre de répartition (accueil, débat, bilan) */
+.meter { position: relative; display: flex; height: 40px; flex: none; background: var(--soft); }
+.meter.big { height: 56px; }
+.m-y { background: var(--yellow); width: 50%; transition: width 0.4s ease; }
+.m-o { background: var(--orange); flex: 1; }
+.pct { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding-inline: 10px; font-family: var(--font-num); font-weight: 700; font-size: 1rem; color: var(--on-color); }
+.meter.big .pct { font-size: 1.3rem; }
+.pct-y { left: 0; } .pct-o { right: 0; }
+.tick { position: absolute; left: 50%; top: -5px; bottom: -5px; width: 4px; margin-left: -2px; background: var(--ink); }
+
+/* Onglets (catégories, bilan) */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border: 4px solid var(--ink); flex: none; }
+.tabs.two { grid-template-columns: 1fr 1fr; }
+.tab {
+  position: relative; min-height: 56px; padding: 8px 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: var(--surface); color: var(--ink); border: 0; border-left: 4px solid var(--ink);
+  font-weight: 800; font-size: 0.9rem; cursor: pointer; touch-action: manipulation;
+}
+.tab:first-child { border-left: 0; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.tabs.two .tab { flex-direction: row; gap: 8px; min-height: 48px; font-size: 0.95rem; }
+.tab svg { width: 16px; height: 16px; fill: currentColor; }
+.lvl { display: flex; gap: 3px; }
+.lvl i { width: 9px; height: 9px; border: 2px solid currentColor; }
+.lvl i.f { background: currentColor; }
+
+/* Deck de cartes */
+.themes { gap: 12px; }
+.deck {
+  position: relative; flex: 1 1 0; min-height: 170px;
+  overflow-x: auto; overflow-y: hidden; container-type: size;
+  scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain;
+}
+.deck::-webkit-scrollbar { display: none; }
+.deck:focus-visible { outline-offset: -4px; }
+.track {
+  --cw: min(calc((100cqh - 16px) * 5 / 7), 72cqw);
+  display: flex; align-items: center; gap: 14px; height: 100%; width: max-content;
+  padding-inline: calc((100cqw - var(--cw)) / 2);
+}
+.tcw { position: relative; flex: none; width: var(--cw); height: calc(var(--cw) * 1.4); scroll-snap-align: center; scroll-snap-stop: always; }
+.tc {
+  width: 100%; height: 100%; padding: 8px; display: flex; flex-direction: column; gap: 6px;
+  background: var(--cardc); color: var(--cardfg);
+  border: 4px solid var(--ink); border-radius: 16px; cursor: pointer;
+  transform-origin: 50% 135%;
+  transform: rotate(calc(var(--d, 0) * 7deg)) scale(calc(1 - var(--ad, 0) * 0.1));
+  opacity: calc(1 - var(--ad, 0) * 0.3);
+  transition: transform 0.12s linear, opacity 0.12s linear;
+}
+.tc-fun { --cardc: var(--yellow); --cardfg: var(--on-color); }
+.tc-spicy { --cardc: var(--orange); --cardfg: var(--on-color); }
+.tc-hot { --cardc: var(--hot); --cardfg: var(--on-hot); }
+.tc-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-inline: 2px; }
+.tc-h h3 { font-family: var(--font-display); font-weight: 800; font-stretch: 108%; font-size: clamp(0.8rem, 3.6vw, 0.98rem); line-height: 1.08; min-width: 0; text-wrap: balance; }
+.tc-h .lvl { padding-top: 3px; flex: none; }
+.tc-art {
+  flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden;
+  border: 3px solid var(--ink); border-radius: 8px; color: var(--ink);
+  background: color-mix(in srgb, var(--cardc) 24%, var(--paper));
+}
+.tc-art svg { width: 82%; height: 92%; }
+.tc-d { padding: 5px 7px; background: var(--surface); color: var(--ink); border: 3px solid var(--ink); border-radius: 8px; font-size: 0.64rem; line-height: 1.25; font-weight: 500; overflow-wrap: break-word; }
+.tc-f { display: flex; justify-content: space-between; padding-inline: 2px; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.dots { display: flex; justify-content: center; gap: 4px; flex: none; }
+.dot-b { position: relative; width: 28px; height: 20px; padding: 0; background: none; border: 0; cursor: pointer; }
+.dot-b::before { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 8px; margin: -4px 0 0 -7px; border: 2px solid var(--ink); }
+.dot-b[aria-current="true"]::before { background: var(--ink); }
+
+/* Réglages */
+.grp { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; flex: none; }
+.grp legend { padding: 0; margin-bottom: 8px; font-weight: 800; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 4px solid var(--ink); }
+.seg label {
+  position: relative; display: grid; place-items: center; min-height: 48px; padding: 4px;
+  background: var(--surface); border-left: 4px solid var(--ink); font-weight: 800; font-size: 0.95rem; cursor: pointer; touch-action: manipulation;
+}
+.seg label:first-child { border-left: 0; }
+.seg label.on { background: var(--ink); color: var(--paper); }
+.seg label:focus-within { outline: 4px solid var(--ink); outline-offset: 3px; z-index: 1; }
+.names { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.nm { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nm span { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.82rem; }
+.sw { width: 14px; height: 14px; flex: none; border: 2px solid var(--ink); }
+.sw.o { background: var(--orange); } .sw.y { background: var(--yellow); }
+.nm input { width: 100%; min-height: 48px; padding: 8px 12px; background: var(--surface); border: 4px solid var(--ink); border-radius: 0; font-weight: 700; }
+.check { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.92rem; min-height: 40px; cursor: pointer; }
+#s-set { gap: 10px; }
+#s-set .grp { gap: 6px; }
+.check input { width: 24px; height: 24px; accent-color: var(--ink); flex: none; margin: 0; }
+
+/* Mise en place */
+.how { display: flex; gap: 16px; align-items: center; flex: none; }
+.phone { width: 98px; height: 156px; flex: none; padding: 6px; display: flex; flex-direction: column; gap: 5px; border: 4px solid var(--ink); background: var(--paper); }
+.ph-o, .ph-y { flex: 1; min-height: 0; display: grid; place-items: center; padding: 2px; overflow: hidden; color: var(--on-color); font-weight: 800; font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.ph-o { background: var(--orange); } .ph-y { background: var(--yellow); }
+.ph-o span, .ph-y span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-o span { transform: rotate(180deg); }
+.ph-bar { height: 12px; display: flex; flex: none; }
+.ph-bar i { flex: 1; background: var(--yellow); } .ph-bar b { flex: 1; background: var(--orange); }
+.how ol { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.how li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 0.9rem; line-height: 1.32; font-weight: 500; }
+.how li b { display: grid; place-items: center; width: 26px; height: 26px; background: var(--ink); color: var(--paper); font-family: var(--font-num); font-size: 0.85rem; }
+.recap { flex: none; padding: 12px 14px; border: 4px dashed var(--ink); display: flex; flex-direction: column; gap: 4px; }
+.recap #x-theme { font-weight: 700; line-height: 1.3; }
+.recap .help { font-size: 0.8rem; line-height: 1.3; }
+.recap .help:empty { display: none; }
+
+/* Débat */
+.debate { gap: 12px; }
+.sq {
+  position: relative; flex: 1 1 0; min-height: 0; width: 100%; display: block; padding: 0; border: 0; border-radius: 0;
+  color: var(--on-color); text-align: left; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.sq-o { background: var(--orange); } .sq-y { background: var(--yellow); }
+.sq:focus-visible { outline-offset: -10px; }
+.sq-in { position: absolute; inset: 0; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; }
+.sq-o .sq-in { transform: rotate(180deg); }
+.sq-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sq-name { font-weight: 900; font-stretch: 112%; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sq-left { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.sq-main { display: flex; flex-direction: column; gap: 0; }
+.sq-label { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.sq-time { font-family: var(--font-num); font-weight: 700; font-size: clamp(2.6rem, min(17vw, 10.5vh), 4.4rem); line-height: 1; letter-spacing: -0.03em; }
+.sq-foot { display: flex; flex-direction: column; gap: 4px; min-height: 2.9rem; justify-content: flex-end; }
+.turn { display: flex; flex-direction: column; gap: 3px; }
+.turn-bar { height: 8px; background: color-mix(in srgb, var(--on-color) 20%, transparent); }
+.turn-bar i { display: block; height: 100%; width: 0; background: var(--on-color); }
+.turn-txt { font-size: 0.78rem; font-weight: 700; }
+.sq-hint { font-weight: 800; font-size: 0.92rem; line-height: 1.2; }
+.sq.active { box-shadow: inset 0 0 0 7px var(--on-color); }
+.sq.dim { opacity: 0.8; }
+.sq.over .turn-bar { background: transparent; border: 2px solid var(--on-color); }
+.sq.over .turn-bar i { background: repeating-linear-gradient(135deg, var(--on-color) 0 6px, transparent 6px 12px); width: 100% !important; }
+.mid { flex: none; display: flex; flex-direction: column; gap: 10px; }
+.gauge { width: 100%; padding: 0; background: none; border: 0; border-radius: 0; color: inherit; text-align: left; cursor: pointer; touch-action: manipulation; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; min-height: 26px; }
+.gauge svg { width: 20px; height: 20px; fill: var(--ink); }
+.g-track { position: relative; height: 14px; background: var(--soft); border: 3px solid var(--ink); }
+.g-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--ink); transition: width 0.12s linear; }
+.g-fill.hot { background: var(--orange); }
+.g-thr { position: absolute; top: -6px; bottom: -6px; width: 3px; margin-left: -1.5px; background: var(--ink); }
+.g-val { min-width: 7ch; text-align: right; font-size: 0.82rem; font-weight: 700; }
+.gauge.na .g-fill { display: none; }
+.gauge.na .g-thr { display: none; }
+.ctrls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+.ctrls .btn { min-height: 48px; padding-inline: 6px; gap: 6px; font-size: 0.92rem; }
+.ctrls .btn svg { width: 18px; height: 18px; }
+.ctrls .btn.ai { min-width: 66px; }
+
+/* Popup dernière minute (ne bloque pas le débat) */
+.pop {
+  position: absolute; left: 20px; right: 20px; top: 50%; z-index: 8; transform: translateY(-50%);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  background: var(--ink); color: var(--paper); border: 4px solid var(--paper); outline: 4px solid var(--ink);
+}
+.pop .eyebrow { color: var(--yellow); }
+.pop-t { font-family: var(--font-display); font-weight: 800; font-stretch: 108%; font-size: 1.3rem; line-height: 1.15; text-wrap: balance; }
+.pop .btn { background: var(--paper); color: var(--ink); border-color: var(--paper); min-height: 46px; }
+
+/* Fenêtres plein écran */
+.ov {
+  position: absolute; inset: 0; z-index: 10; padding: 24px;
+  display: flex; flex-direction: column; justify-content: center; gap: 16px; overflow-y: auto;
+  background: var(--paper);
+}
+.ov .title { font-size: clamp(1.7rem, 9vw, 2.3rem); }
+.card { border: 4px solid var(--ink); background: var(--surface); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.card .meta { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.card h3 { font-size: 1.05rem; line-height: 1.25; font-weight: 800; }
+.card p { font-size: 0.92rem; line-height: 1.4; }
+.ov-q { font-weight: 700; font-size: 1rem; line-height: 1.3; }
+.ov-actions { display: flex; flex-direction: column; gap: 10px; }
+.ai-mark { width: 64px; height: 64px; display: grid; place-items: center; background: var(--orange); border: 4px solid var(--ink); color: var(--on-color); }
+.ai-mark svg { width: 34px; height: 34px; fill: currentColor; }
+.calm-time { font-family: var(--font-num); font-weight: 700; font-size: clamp(3.4rem, 22vw, 5rem); line-height: 1; letter-spacing: -0.03em; }
+.badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--yellow); color: var(--on-color); border: 3px solid var(--ink); font-weight: 800; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.badge svg { width: 16px; height: 16px; fill: currentColor; }
+
+/* Bilan */
+.sub { font-size: 0.92rem; color: var(--muted); line-height: 1.35; }
+.bp { display: flex; flex-direction: column; gap: 12px; flex: none; }
+.verdict { font-weight: 800; font-size: 1.1rem; line-height: 1.3; }
+.rows { display: flex; flex-direction: column; gap: 10px; flex: none; }
+.res { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; border: 4px solid var(--ink); background: var(--surface); }
+.res .sw { width: 28px; height: 28px; border-width: 3px; }
+.res b { display: block; font-size: 1rem; overflow-wrap: anywhere; }
+.res span.d { font-size: 0.8rem; color: var(--muted); }
+.res .t { font-family: var(--font-num); font-weight: 700; font-size: 1.7rem; }
+.prem-note { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--yellow); color: var(--on-color); border: 4px solid var(--ink); }
+.prem-note svg { width: 24px; height: 24px; flex: none; fill: currentColor; }
+.prem-note b { display: block; font-size: 0.95rem; line-height: 1.2; }
+.prem-note span { font-size: 0.8rem; font-weight: 600; }
+.kpi { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 8px 12px; border: 4px solid var(--ink); background: var(--surface); }
+.score { display: flex; flex-direction: column; align-items: flex-start; }
+.score .big { font-family: var(--font-num); font-weight: 700; font-size: 2.6rem; line-height: 1; }
+.score .big small { font-size: 0.9rem; font-weight: 400; color: var(--muted); }
+.score > span:last-child { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.subs { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bp#bp-pro { gap: 8px; }
+.subs li { display: grid; grid-template-columns: 6.6em 1fr 2ch; gap: 8px; align-items: center; font-size: 0.74rem; font-weight: 700; }
+.subs .sb { display: block; height: 10px; background: var(--soft); border: 2px solid var(--ink); }
+.subs .sb i { display: block; height: 100%; background: var(--orange); }
+.fig { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px 4px; border: 4px solid var(--ink); background: var(--surface); }
+.fig figcaption { display: flex; justify-content: space-between; gap: 8px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.fig figcaption span:last-child { color: var(--muted); letter-spacing: 0.02em; text-transform: none; font-family: var(--font-num); font-weight: 700; }
+.ch { display: block; width: 100%; height: auto; }
+.ch text { font-family: var(--font-num); font-size: 9px; fill: var(--muted); }
+.ch .g { stroke: var(--muted); stroke-width: 1; opacity: 0.45; fill: none; }
+.ch .ar { fill: var(--yellow); opacity: 0.65; }
+.ch .ln { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ch .pt { fill: var(--orange); stroke: var(--ink); stroke-width: 2; }
+.ch .b { fill: var(--yellow); stroke: var(--ink); stroke-width: 1; }
+.ch .b.hi { fill: var(--orange); }
+.ch .th { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 3; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sq.over { animation: alarm 0.9s steps(2, jump-none) infinite; }
+  .pop { animation: pop-in 0.25s ease-out; }
+}
+@keyframes alarm { 0% { box-shadow: inset 0 0 0 7px var(--on-color); } 100% { box-shadow: inset 0 0 0 1px var(--on-color); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-40%); } to { opacity: 1; transform: translateY(-50%); } }
+@media (prefers-reduced-motion: reduce) { .tc { transition: none; } }
+@media (max-width: 360px) {
+  .screen { padding: 16px; }
+  .how { gap: 12px; }
+  .phone { width: 84px; height: 140px; }
+}
+</style>
+</head>
+<body>
+<main class="app" id="app">
+
+  <!-- 1. Accueil -->
+  <section class="screen home" id="s-home" aria-labelledby="h-home">
+    <h1 class="sr" id="h-home" tabindex="-1">DemGo</h1>
+    <div class="lang" role="group" aria-label="Langue" data-ia="langLabel">
+      <button type="button" id="lang-fr" lang="fr" aria-label="Français" aria-pressed="true">FR</button>
+      <button type="button" id="lang-en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
+    <div class="wm" aria-hidden="true">
+      <div class="wm-in">
+        <span class="w-dem">Dem</span><span class="w-g">G</span>
+        <svg class="logo" viewBox="-1 -1.6691 2.7431 2.6691" focusable="false">
+          <path class="lg-o" d="M0 0L0.7431 -0.6691A1 1 0 1 0 0.766 0.6428Z"/>
+          <path class="lg-y" d="M0.7431 -0.6691L0 -1.3382A1 1 0 1 1 0 0Z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="meter" aria-hidden="true">
+      <div class="m-y"></div><div class="m-o"></div>
+      <span class="pct pct-y" data-i="pct50">50 %</span><span class="pct pct-o" data-i="pct50">50 %</span><i class="tick"></i>
+    </div>
+    <div class="blk-y">
+      <p class="pitch" data-i="pitch">Et si on prenait le temps d’enfin se comprendre&nbsp;?</p>
+      <button type="button" class="btn" id="go" data-i="go">Commencer</button>
+    </div>
+  </section>
+
+  <!-- 2. Thème : deck de cartes -->
+  <section class="screen themes" id="s-theme" hidden aria-labelledby="h-theme">
+    <div class="top" data-step="1"></div>
+    <h1 class="title" id="h-theme" tabindex="-1" data-i="themeTitle">Sur quoi débattre ?</h1>
+    <div class="tabs" role="tablist" aria-label="Catégories de thèmes" data-ia="tabsLabel" id="tabs"></div>
+    <div class="deck" id="deck" tabindex="0" role="group" aria-roledescription="carrousel" aria-label="Cartes de thèmes. Utilisez les flèches gauche et droite pour changer de carte." data-ia="deckLabel">
+      <div class="track" id="track"></div>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="foot">
+      <button type="button" class="btn primary" id="choose" data-i="choose">Choisir cette carte</button>
+      <button type="button" class="btn" id="free" data-i="free">Débat libre, on est déjà chauds !</button>
+    </div>
+  </section>
+
+  <!-- 3. Réglages -->
+  <section class="screen" id="s-set" hidden aria-labelledby="h-set">
+    <div class="top" data-step="2"></div>
+    <h1 class="title" id="h-set" tabindex="-1" data-i="setTitle">Réglages</h1>
+    <fieldset class="grp">
+      <legend data-i="lgDur">Durée du débat</legend>
+      <div class="seg" id="seg-dur"></div>
+    </fieldset>
+    <fieldset class="grp">
+      <legend data-i="lgCap">Temps de parole de chacun</legend>
+      <div class="seg" id="seg-cap"></div>
+      <p class="help" id="cap-help"></p>
+    </fieldset>
+    <fieldset class="grp">
+      <legend data-i="lgWho">Qui débat ?</legend>
+      <div class="names">
+        <label class="nm"><span><i class="sw o"></i><span data-i="top">En haut</span></span><input type="text" id="in-o" maxlength="12" placeholder="Orange" data-ip="defO" autocomplete="off"></label>
+        <label class="nm"><span><i class="sw y"></i><span data-i="bottom">En bas</span></span><input type="text" id="in-y" maxlength="12" placeholder="Jaune" data-ip="defY" autocomplete="off"></label>
+      </div>
+    </fieldset>
+    <label class="check"><input type="checkbox" id="sound" checked><span data-i="sound">Signal sonore si le temps est dépassé</span></label>
+    <label class="check"><input type="checkbox" id="tension" checked><span data-i="tension">Alerte si le ton monte (micro)</span></label>
+    <div class="foot"><button type="button" class="btn primary" id="set-next" data-i="cont">Continuer</button></div>
+  </section>
+
+  <!-- 4. Mise en place -->
+  <section class="screen" id="s-how" hidden aria-labelledby="h-how">
+    <div class="top" data-step="3"></div>
+    <h1 class="title" id="h-how" tabindex="-1" data-i="howTitle">Posez le téléphone entre vous</h1>
+    <div class="how">
+      <div class="phone" aria-hidden="true">
+        <div class="ph-o"><span id="x-o">Orange</span></div>
+        <div class="ph-bar"><i></i><b></b></div>
+        <div class="ph-y"><span id="x-y">Jaune</span></div>
+      </div>
+      <ol>
+        <li><b>1</b><span data-i="how1">À plat sur la table. Le haut est à l’envers pour que chacun lise sa moitié.</span></li>
+        <li><b>2</b><span data-i="how2">Touchez votre couleur pour parler. Touchez-la encore pour passer la parole.</span></li>
+        <li><b>3</b><span data-i="how3">La barre du milieu montre la part de chacun. Visez l’équilibre.</span></li>
+      </ol>
+    </div>
+    <div class="recap"><p class="eyebrow" data-i="theme">Thème</p><p id="x-theme"></p><p class="help" id="x-mic"></p></div>
+    <div class="foot"><button type="button" class="btn primary" id="start" data-i="start">Lancer le débat</button></div>
+  </section>
+
+  <!-- 5. Débat -->
+  <section class="screen debate" id="s-debate" hidden aria-label="Débat en cours" data-ia="debateAria">
+    <button type="button" class="sq sq-o" id="sq-o" aria-pressed="false">
+      <span class="sq-in">
+        <span class="sq-head"><span class="sq-name"></span><span class="sq-left"><span data-i="left">Reste</span> <b class="num">0:00</b></span></span>
+        <span class="sq-main"><span class="sq-label" data-i="spTime">Temps de parole</span><span class="sq-time">0:00</span></span>
+        <span class="sq-foot">
+          <span class="turn" hidden><span class="turn-bar"><i></i></span><span class="turn-txt num"></span></span>
+          <span class="sq-hint">Touche pour parler</span>
+        </span>
+      </span>
+    </button>
+
+    <div class="mid">
+      <div class="meter" id="meter" role="img" aria-label="Répartition du temps de parole" data-ia="meterLabel">
+        <div class="m-y" id="m-y"></div><div class="m-o"></div>
+        <span class="pct pct-y" id="p-y">—</span><span class="pct pct-o" id="p-o">—</span><i class="tick"></i>
+      </div>
+      <button type="button" class="gauge" id="gauge">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>
+        <div class="g-track" aria-hidden="true"><div class="g-fill" id="g-fill"></div><i class="g-thr" id="g-thr"></i></div>
+        <span class="g-val num" id="g-val">Micro…</span>
+      </button>
+      <div class="ctrls">
+        <button type="button" class="btn" id="btn-pause"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16"/><rect x="14" y="4" width="5" height="16"/></svg><span data-i="pause">Pause</span></button>
+        <button type="button" class="btn" id="btn-src"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h10l4 4v16H5zM8 10h8v2H8zm0 4h8v2H8zm0 4h5v2H8z"/></svg><span data-i="sources">Sources</span></button>
+        <button type="button" class="btn ai" id="btn-ai" aria-label="IA : DimGy, l’assistant du débat" data-ia="aiLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z"/></svg><span data-i="ai">IA</span></button>
+      </div>
+    </div>
+
+    <button type="button" class="sq sq-y" id="sq-y" aria-pressed="false">
+      <span class="sq-in">
+        <span class="sq-head"><span class="sq-name"></span><span class="sq-left"><span data-i="left">Reste</span> <b class="num">0:00</b></span></span>
+        <span class="sq-main"><span class="sq-label" data-i="spTime">Temps de parole</span><span class="sq-time">0:00</span></span>
+        <span class="sq-foot">
+          <span class="turn" hidden><span class="turn-bar"><i></i></span><span class="turn-txt num"></span></span>
+          <span class="sq-hint">Touche pour parler</span>
+        </span>
+      </span>
+    </button>
+
+    <div class="pop" id="pop-last" role="alert" hidden>
+      <p class="eyebrow" data-i="lastEye">Dernière minute</p>
+      <p class="pop-t" data-i="lastTxt">C’est la dernière minute, il est temps de conclure&nbsp;!</p>
+      <button type="button" class="btn" id="pop-ok" data-i="ok">Compris</button>
+    </div>
+
+    <div class="ov" id="ov-pause" role="dialog" aria-modal="true" aria-labelledby="h-pause" hidden>
+      <h2 class="title" id="h-pause" data-i="pauseTitle">Débat en pause</h2>
+      <p class="ov-q" id="pause-info"></p>
+      <div class="ov-actions">
+        <button type="button" class="btn primary" id="resume" data-i="resume">Reprendre</button>
+        <button type="button" class="btn" id="finish" data-i="finish">Terminer le débat</button>
+      </div>
+    </div>
+
+    <div class="ov" id="ov-src" role="dialog" aria-modal="true" aria-labelledby="h-src" hidden>
+      <p class="eyebrow" data-i="srcEye">Source · débat en pause</p>
+      <h2 class="title" id="h-src"></h2>
+      <div class="card" id="src-card"></div>
+      <div class="ov-actions">
+        <a class="btn" id="src-link" href="#" target="_blank" rel="noopener noreferrer">Ouvrir la source</a>
+        <button type="button" class="btn primary" id="src-close" data-i="srcClose">Reprendre le débat</button>
+      </div>
+    </div>
+
+    <div class="ov" id="ov-ai" role="dialog" aria-modal="true" aria-labelledby="h-ai" hidden>
+      <div class="ai-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z"/></svg></div>
+      <h2 class="title" id="h-ai" data-i="aiTitle">DimGy est là pour vous&nbsp;!</h2>
+      <p class="ov-q" data-i="aiTxt">Il réagit à vos sollicitations de sources, résume votre pensée et vous assiste tout au long du débat.</p>
+      <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="12"/><path d="M8 10V8a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span data-i="prem">Réservé aux utilisateurs premium</span></span>
+      <div class="ov-actions"><button type="button" class="btn primary" id="ai-close" data-i="aiClose">Compris, reprendre le débat</button></div>
+    </div>
+
+    <div class="ov" id="ov-calm" role="dialog" aria-modal="true" aria-labelledby="h-calm" hidden>
+      <p class="eyebrow" id="calm-eye">Volume élevé</p>
+      <h2 class="title" id="h-calm">Tout va bien&nbsp;?</h2>
+      <p class="ov-q" id="calm-q">On détecte comme une petite tension dans l’air… on prend 5 minutes de pause&nbsp;?</p>
+      <p class="calm-time num" id="calm-time" hidden>5:00</p>
+      <div class="ov-actions">
+        <button type="button" class="btn primary" id="calm-pause" data-i="calmPause">Pause de 5 minutes</button>
+        <button type="button" class="btn" id="calm-go">On continue calmement</button>
+      </div>
+    </div>
+
+    <div class="ov" id="ov-end" role="dialog" aria-modal="true" aria-labelledby="h-over" hidden>
+      <h2 class="title" id="h-over" data-i="overTitle">Temps écoulé</h2>
+      <p class="ov-q" data-i="overQ">La durée prévue est atteinte.</p>
+      <div class="ov-actions">
+        <button type="button" class="btn primary" id="see-end" data-i="seeEnd">Voir le bilan</button>
+        <button type="button" class="btn" id="extend" data-i="extend">Prolonger de 2 minutes</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Bilan -->
+  <section class="screen" id="s-end" hidden aria-labelledby="h-end">
+    <h1 class="title" id="h-end" tabindex="-1" data-i="sumTitle">Bilan du débat</h1>
+    <div class="tabs two" role="tablist" aria-label="Type de bilan" data-ia="sumTabs">
+      <button type="button" class="tab" role="tab" id="bt-sum" aria-selected="true" aria-controls="bp-sum"><span data-i="tabSum">Résumé</span></button>
+      <button type="button" class="tab" role="tab" id="bt-pro" aria-selected="false" aria-controls="bp-pro" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="12"/><path d="M8 10V8a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span data-i="tabPro">Premium</span></button>
+    </div>
+
+    <div class="bp" id="bp-sum" role="tabpanel" aria-labelledby="bt-sum">
+      <p class="sub" id="e-sub"></p>
+      <div class="meter big" id="e-meter" role="img" aria-label="Répartition finale du temps de parole" data-ia="meterFinalLabel">
+        <div class="m-y" id="e-y"></div><div class="m-o"></div>
+        <span class="pct pct-y" id="e-py">—</span><span class="pct pct-o" id="e-po">—</span><i class="tick"></i>
+      </div>
+      <p class="verdict" id="e-verdict"></p>
+      <div class="rows" id="e-rows"></div>
+    </div>
+
+    <div class="bp" id="bp-pro" role="tabpanel" aria-labelledby="bt-pro" hidden>
+      <div class="prem-note">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="12"/><path d="M8 10V8a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
+        <div><b data-i="prem">Réservé aux utilisateurs premium</b><span data-i="premNote">Aperçu avec des données fictives.</span></div>
+      </div>
+      <div class="kpi">
+        <div class="score"><span class="big">78<small>/100</small></span><span data-i="constructive">Débat constructif</span></div>
+        <ul class="subs" aria-label="Détail de la qualité du débat" data-ia="subsLabel">
+          <li><span data-i="listen">Écoute</span><span class="sb"><i style="width:82%"></i></span><span class="num">82</span></li>
+          <li><span data-i="respect">Respect</span><span class="sb"><i style="width:91%"></i></span><span class="num">91</span></li>
+          <li><span data-i="args">Arguments</span><span class="sb"><i style="width:64%"></i></span><span class="num">64</span></li>
+        </ul>
+      </div>
+      <figure class="fig"><figcaption><span data-i="agree">Entente</span><span id="cap-ent"></span></figcaption><div id="ch-ent"></div></figure>
+      <figure class="fig"><figcaption><span data-i="soundLvl">Niveau sonore</span><span id="cap-db"></span></figcaption><div id="ch-db"></div></figure>
+    </div>
+
+    <div class="foot row2">
+      <button type="button" class="btn primary" id="again" data-i="again">Nouveau débat</button>
+      <button type="button" class="btn" id="to-home" data-i="home">Accueil</button>
+    </div>
+  </section>
+
+  <p class="sr" id="live" aria-live="polite"></p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- Langues (FR / EN) ---------- */
+  var LANG = 'fr';
+  var NB = ' ';
+  var T = {
+    fr: {
+      pitch: 'Et si on prenait le temps d’enfin se comprendre' + NB + '?', go: 'Commencer', langLabel: 'Langue',
+      themeTitle: 'Sur quoi débattre ?', tabsLabel: 'Catégories de thèmes', carousel: 'carrousel',
+      deckLabel: 'Cartes de thèmes. Utilisez les flèches gauche et droite pour changer de carte.',
+      choose: 'Choisir cette carte', chooseAria: function (t) { return 'Choisir cette carte : ' + t; },
+      free: 'Débat libre, on est déjà chauds !', cardWord: 'carte', debateAria: 'Débat en cours',
+      cardOf: function (n) { return 'carte ' + n + ' sur 3'; }, cardOfCap: function (n) { return 'Carte ' + n + ' sur 3'; },
+      setTitle: 'Réglages', lgDur: 'Durée du débat', lgCap: 'Temps de parole de chacun', lgWho: 'Qui débat ?',
+      top: 'En haut', bottom: 'En bas', defO: 'Orange', defY: 'Jaune',
+      sound: 'Signal sonore si le temps est dépassé', tension: 'Alerte si le ton monte (micro)', cont: 'Continuer',
+      capLabel: function (v) { return v ? (v < 60 ? v + ' s' : (v / 60) + ' min') : 'Libre'; },
+      capHelp: function (cap, capTxt, share, dur) { return (cap ? 'Signal si une prise de parole dépasse ' + capTxt + '. ' : 'Aucune limite par prise de parole. ') + 'Environ ' + share + ' chacun sur ' + dur + ' min.'; },
+      howTitle: 'Posez le téléphone entre vous',
+      how1: 'À plat sur la table. Le haut est à l’envers pour que chacun lise sa moitié.',
+      how2: 'Touchez votre couleur pour parler. Touchez-la encore pour passer la parole.',
+      how3: 'La barre du milieu montre la part de chacun. Visez l’équilibre.',
+      theme: 'Thème', freeTheme: 'Débat libre, sans thème précis', start: 'Lancer le débat',
+      left: 'Reste', spTime: 'Temps de parole', meterLabel: 'Répartition du temps de parole', pct50: '50 %',
+      pct: function (n) { return n + ' %'; },
+      meterNone: 'Personne n’a encore parlé',
+      meterSplit: function (y, py, o, po) { return 'Répartition du temps de parole : ' + y + ' ' + py + ' %, ' + o + ' ' + po + ' %'; },
+      pause: 'Pause', sources: 'Sources', ai: 'IA', aiLabel: 'IA : DimGy, l’assistant du débat',
+      lastEye: 'Dernière minute', lastTxt: 'C’est la dernière minute, il est temps de conclure' + NB + '!', ok: 'Compris',
+      pauseTitle: 'Débat en pause', resume: 'Reprendre', finish: 'Terminer le débat', finishConfirm: 'Confirmer : voir le bilan',
+      pauseInfo: function (rem, dur, o, to, y, ty) { return 'Il reste ' + rem + ' sur ' + dur + ' min. ' + o + ' : ' + to + '. ' + y + ' : ' + ty + '.'; },
+      srcEye: 'Source · débat en pause', srcOpen: 'Ouvrir la source ↗', srcClose: 'Reprendre le débat',
+      freeSrcTitle: 'Débat libre',
+      freeSrcNote: 'Vous avez choisi de débattre sans thème précis, donc aucune source n’est préparée. Au prochain débat, choisissez un thème pour en obtenir une.',
+      aiTitle: 'DimGy est là pour vous' + NB + '!', aiTxt: 'Il réagit à vos sollicitations de sources, résume votre pensée et vous assiste tout au long du débat.',
+      prem: 'Réservé aux utilisateurs premium', aiClose: 'Compris, reprendre le débat',
+      calmEye: 'Volume élevé', calmTitle: 'Tout va bien' + NB + '?', calmQ: 'On détecte comme une petite tension dans l’air… on prend 5 minutes de pause' + NB + '?',
+      calmPause: 'Pause de 5 minutes', calmGo: 'On continue calmement',
+      calmPEye: 'Pause', calmPTitle: 'Respirez un coup', calmPQ: 'Le chrono du débat est arrêté. Un verre d’eau, quelques pas, et on reprend.', calmPGo: 'Reprendre le débat',
+      calmDTitle: 'C’est reparti ?', calmDQ: 'Les 5 minutes sont écoulées. Reprenez quand vous êtes prêts.',
+      calmAnn: 'Volume élevé. Le débat est en pause.', calmDoneAnn: 'Pause terminée',
+      overTitle: 'Temps écoulé', overQ: 'La durée prévue est atteinte.', seeEnd: 'Voir le bilan', extend: 'Prolonger de 2 minutes',
+      turnTxt: function (a, b) { return 'Prise de parole ' + a + (b ? ' / ' + b : ''); },
+      hintOver: 'Temps écoulé. Conclus et passe la parole.', hintPass: 'Touche pour passer la parole', hintSpeak: 'Touche pour parler',
+      btnAria: function (n, isA, tm) { return n + ' : ' + (isA ? 'passer la parole' : 'prendre la parole') + '. Temps de parole ' + tm; },
+      annPass: function (n) { return n + ' passe la parole'; }, annTake: function (n) { return n + ' a la parole'; },
+      annOver: function (n) { return 'Temps de parole écoulé pour ' + n; },
+      gaugeAria: function (n) { return 'Détecteur de volume, alerte à ' + n + ' décibels. Toucher pour changer le seuil.'; },
+      gaugeDenied: 'Micro indisponible. Toucher pour simuler l’alerte de tension.',
+      gLimit: function (n) { return 'Seuil ' + n; }, gSim: 'Simuler', gWait: 'Micro…',
+      micOk: 'Détecteur de tension actif : le micro mesure le volume, rien n’est enregistré.',
+      micDenied: 'Micro indisponible ici (refusé ou bloqué par la page). Pendant le débat, touche la jauge pour simuler l’alerte.',
+      micWait: 'Autorise le micro quand le navigateur le demande (le volume est mesuré, rien n’est enregistré).',
+      annSens: function (n) { return 'Seuil d’alerte : ' + n + ' décibels, ' + (n === 80 ? 'souple' : n === 75 ? 'normal' : 'strict'); },
+      sumTitle: 'Bilan du débat', sumTabs: 'Type de bilan', tabSum: 'Résumé', tabPro: 'Premium', premNote: 'Aperçu avec des données fictives.',
+      meterFinalLabel: 'Répartition finale du temps de parole',
+      meterFinal: function (y, py, o, po) { return 'Répartition finale : ' + y + ' ' + py + ' %, ' + o + ' ' + po + ' %'; }, meterFinalNone: 'Personne n’a parlé',
+      eSub: function (q, el, tot) { return (q ? q + ' · ' : 'Débat libre · ') + el + ' de débat, ' + tot + ' de parole.'; },
+      vNone: 'Personne n’a parlé assez longtemps pour établir un bilan.', vBal: 'Le temps de parole a été bien partagé.',
+      vTop: function (n, p) { return n + ' a occupé ' + p + ' % du temps de parole.'; },
+      turns: function (n, lg) { return n + (n > 1 ? ' prises de parole' : ' prise de parole') + ' · la plus longue ' + lg; },
+      constructive: 'Débat constructif', subsLabel: 'Détail de la qualité du débat', listen: 'Écoute', respect: 'Respect', args: 'Arguments',
+      agree: 'Entente', soundLvl: 'Niveau sonore', capEnt: '42 → 78 sur 100', capDb: function (pk, av) { return 'pic ' + pk + ' dB · moy. ' + av + ' dB'; },
+      chTension: 'Tension',
+      chEnt: 'Évolution fictive de l’entente entre les participants : de 42 à 78 sur 100, avec un creux au premier tiers du débat.',
+      chDb: function (av, pk) { return 'Niveau sonore fictif pendant le débat : moyenne ' + av + ' décibels, pic à ' + pk + ' décibels.'; },
+      again: 'Nouveau débat', home: 'Accueil', back: 'Retour',
+      step: function (n) { return 'Étape ' + n + ' sur 3'; }, intensity: function (n) { return 'Intensité ' + n + ' sur 3'; }
+    },
+    en: {
+      pitch: 'What if we took the time to finally understand each other?', go: 'Start', langLabel: 'Language',
+      themeTitle: 'What shall we debate?', tabsLabel: 'Theme categories', carousel: 'carousel',
+      deckLabel: 'Theme cards. Use the left and right arrow keys to change card.',
+      choose: 'Choose this card', chooseAria: function (t) { return 'Choose this card: ' + t; },
+      free: 'Free debate, we’re already fired up!', cardWord: 'card', debateAria: 'Debate in progress',
+      cardOf: function (n) { return 'card ' + n + ' of 3'; }, cardOfCap: function (n) { return 'Card ' + n + ' of 3'; },
+      setTitle: 'Settings', lgDur: 'Debate length', lgCap: 'Speaking time per turn', lgWho: 'Who’s debating?',
+      top: 'Top', bottom: 'Bottom', defO: 'Orange', defY: 'Yellow',
+      sound: 'Sound alert when time is up', tension: 'Alert if voices rise (mic)', cont: 'Continue',
+      capLabel: function (v) { return v ? (v < 60 ? v + ' s' : (v / 60) + ' min') : 'Free'; },
+      capHelp: function (cap, capTxt, share, dur) { return (cap ? 'Alert if a turn runs over ' + capTxt + '. ' : 'No limit per turn. ') + 'About ' + share + ' each out of ' + dur + ' min.'; },
+      howTitle: 'Put the phone between you',
+      how1: 'Flat on the table. The top half is upside down so each of you can read your own half.',
+      how2: 'Tap your color to speak. Tap it again to pass the floor.',
+      how3: 'The middle bar shows each person’s share. Aim for balance.',
+      theme: 'Theme', freeTheme: 'Free debate, no specific theme', start: 'Start the debate',
+      left: 'Remaining', spTime: 'Speaking time', meterLabel: 'Speaking time split', pct50: '50%',
+      pct: function (n) { return n + '%'; },
+      meterNone: 'Nobody has spoken yet',
+      meterSplit: function (y, py, o, po) { return 'Speaking time split: ' + y + ' ' + py + '%, ' + o + ' ' + po + '%'; },
+      pause: 'Pause', sources: 'Sources', ai: 'AI', aiLabel: 'AI: DimGy, the debate assistant',
+      lastEye: 'Last minute', lastTxt: 'It’s the last minute, time to wrap up!', ok: 'Got it',
+      pauseTitle: 'Debate paused', resume: 'Resume', finish: 'End the debate', finishConfirm: 'Confirm: see the summary',
+      pauseInfo: function (rem, dur, o, to, y, ty) { return rem + ' left out of ' + dur + ' min. ' + o + ': ' + to + '. ' + y + ': ' + ty + '.'; },
+      srcEye: 'Source · debate paused', srcOpen: 'Open the source ↗', srcClose: 'Resume the debate',
+      freeSrcTitle: 'Free debate',
+      freeSrcNote: 'You chose to debate without a specific theme, so no source is prepared. Next time, pick a theme to get one.',
+      aiTitle: 'DimGy is here for you!', aiTxt: 'It reacts to your requests for sources, sums up your thinking and assists you throughout the debate.',
+      prem: 'Premium users only', aiClose: 'Got it, resume the debate',
+      calmEye: 'High volume', calmTitle: 'Is everything okay?', calmQ: 'We’re picking up a bit of tension in the air… shall we take a 5-minute break?',
+      calmPause: '5-minute break', calmGo: 'Keep going calmly',
+      calmPEye: 'Break', calmPTitle: 'Take a breath', calmPQ: 'The debate clock is stopped. A glass of water, a few steps, and we pick it back up.', calmPGo: 'Resume the debate',
+      calmDTitle: 'Ready to go again?', calmDQ: 'The 5 minutes are up. Resume when you’re ready.',
+      calmAnn: 'High volume. The debate is paused.', calmDoneAnn: 'Break over',
+      overTitle: 'Time’s up', overQ: 'The planned time has been reached.', seeEnd: 'See the summary', extend: 'Extend by 2 minutes',
+      turnTxt: function (a, b) { return 'Turn ' + a + (b ? ' / ' + b : ''); },
+      hintOver: 'Time’s up. Wrap up and pass the floor.', hintPass: 'Tap to pass the floor', hintSpeak: 'Tap to speak',
+      btnAria: function (n, isA, tm) { return n + ': ' + (isA ? 'pass the floor' : 'take the floor') + '. Speaking time ' + tm; },
+      annPass: function (n) { return n + ' passes the floor'; }, annTake: function (n) { return n + ' has the floor'; },
+      annOver: function (n) { return 'Speaking time is up for ' + n; },
+      gaugeAria: function (n) { return 'Volume detector, alert at ' + n + ' decibels. Tap to change the threshold.'; },
+      gaugeDenied: 'Microphone unavailable. Tap to simulate the tension alert.',
+      gLimit: function (n) { return 'Limit ' + n; }, gSim: 'Simulate', gWait: 'Mic…',
+      micOk: 'Tension detector on: the mic only measures volume, nothing is recorded.',
+      micDenied: 'Microphone unavailable here (denied or blocked by the page). During the debate, tap the gauge to simulate the alert.',
+      micWait: 'Allow the microphone when the browser asks (only volume is measured, nothing is recorded).',
+      annSens: function (n) { return 'Alert threshold: ' + n + ' decibels, ' + (n === 80 ? 'relaxed' : n === 75 ? 'normal' : 'strict'); },
+      sumTitle: 'Debate summary', sumTabs: 'Summary type', tabSum: 'Summary', tabPro: 'Premium', premNote: 'Preview with fictional data.',
+      meterFinalLabel: 'Final speaking time split',
+      meterFinal: function (y, py, o, po) { return 'Final split: ' + y + ' ' + py + '%, ' + o + ' ' + po + '%'; }, meterFinalNone: 'Nobody spoke',
+      eSub: function (q, el, tot) { return (q ? q + ' · ' : 'Free debate · ') + el + ' of debate, ' + tot + ' of speaking time.'; },
+      vNone: 'Nobody spoke long enough for a summary.', vBal: 'Speaking time was well shared.',
+      vTop: function (n, p) { return n + ' used ' + p + '% of the speaking time.'; },
+      turns: function (n, lg) { return n + (n === 1 ? ' turn' : ' turns') + ' · longest ' + lg; },
+      constructive: 'Constructive debate', subsLabel: 'Debate quality breakdown', listen: 'Listening', respect: 'Respect', args: 'Arguments',
+      agree: 'Agreement', soundLvl: 'Sound level', capEnt: '42 → 78 out of 100', capDb: function (pk, av) { return 'peak ' + pk + ' dB · avg. ' + av + ' dB'; },
+      chTension: 'Tension',
+      chEnt: 'Fictional change in agreement between participants: from 42 to 78 out of 100, with a dip in the first third of the debate.',
+      chDb: function (av, pk) { return 'Fictional sound level during the debate: average ' + av + ' decibels, peak at ' + pk + ' decibels.'; },
+      again: 'New debate', home: 'Home', back: 'Back',
+      step: function (n) { return 'Step ' + n + ' of 3'; }, intensity: function (n) { return 'Intensity ' + n + ' of 3'; }
+    }
+  };
+  function t(k) { var v = T[LANG][k]; return typeof v === 'function' ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v; }
+
+  /* Thèmes et sources par langue (les liens et les titres d'origine des sources ne changent pas) */
+  var CT = {
+    fr: {
+      cats: { fun: 'Pour rire', spicy: 'Polémique', hot: 'Clivant' },
+      th: {
+        lait: { title: 'Lait ou céréales ?', sub: 'Qui verse en premier ? Le débat qui divise toutes les cuisines.', q: 'Le lait avant ou après les céréales ?' },
+        ananas: { title: 'Ananas sur la pizza', sub: 'Crime culinaire ou coup de génie ? Personne n’a la même réponse.', q: 'L’ananas a-t-il sa place sur une pizza ?' },
+        chocolatine: { title: 'Pain au chocolat ou chocolatine ?', sub: 'Un mot, deux camps, et une frontière invisible qui traverse la France.', q: 'Pain au chocolat ou chocolatine ?' },
+        vitesse: { title: '80 km/h sur les routes', sub: 'Sécurité routière ou liberté de rouler : où placer la limite ?', q: 'Faut-il limiter la vitesse à 80 km/h sur les routes secondaires ?' },
+        teletravail: { title: 'Télétravail pour tous', sub: 'Un droit pour chaque salarié, ou un arrangement entre employeur et équipe ?', q: 'Le télétravail doit-il devenir un droit ?' },
+        reseaux: { title: 'Réseaux sociaux avant 15 ans', sub: 'Protéger la jeunesse ou laisser chaque famille décider ?', q: 'Faut-il interdire les réseaux sociaux avant 15 ans ?' },
+        mourir: { title: 'Aide active à mourir', sub: 'Autonomie, soins palliatifs, rôle des soignants : un débat de fin de vie.', q: 'Faut-il légaliser l’aide active à mourir ?' },
+        immigration: { title: 'Immigration en France', sub: 'Accueil, intégration, contrôle des frontières : où mettre le curseur ?', q: 'Faut-il limiter davantage l’immigration en France ?' },
+        peine: { title: 'Peine de mort', sub: 'Abolie en 1981. Faut-il la rétablir ? L’un des débats les plus tranchés.', q: 'Faut-il rétablir la peine de mort ?' }
+      }
+    },
+    en: {
+      cats: { fun: 'For fun', spicy: 'Spicy', hot: 'Divisive' },
+      th: {
+        lait: { title: 'Milk or cereal first?', sub: 'Who pours first? The debate that divides every kitchen.', q: 'Milk before or after the cereal?' },
+        ananas: { title: 'Pineapple on pizza', sub: 'Culinary crime or stroke of genius? Nobody gives the same answer.', q: 'Does pineapple belong on a pizza?' },
+        chocolatine: { title: 'Pain au chocolat or chocolatine?', sub: 'One pastry, two names, and an invisible border running through France.', q: 'Pain au chocolat or chocolatine?' },
+        vitesse: { title: '80 km/h on country roads', sub: 'Road safety or freedom to drive: where should the limit be?', q: 'Should speed be limited to 80 km/h on secondary roads?' },
+        teletravail: { title: 'Remote work for all', sub: 'A right for every employee, or an arrangement between employer and team?', q: 'Should remote work become a right?' },
+        reseaux: { title: 'Social media before 15', sub: 'Protect young people, or let each family decide?', q: 'Should social media be banned for under-15s?' },
+        mourir: { title: 'Assisted dying', sub: 'Autonomy, palliative care, the role of caregivers: an end-of-life debate.', q: 'Should assisted dying be legalized?' },
+        immigration: { title: 'Immigration in France', sub: 'Welcome, integration, border control: where to set the dial?', q: 'Should immigration to France be restricted further?' },
+        peine: { title: 'Death penalty', sub: 'Abolished in 1981. Should it come back? One of the sharpest debates.', q: 'Should the death penalty be reinstated?' }
+      }
+    }
+  };
+  var ST = {
+    fr: {
+      lait: { org: 'I’m a Scientist', date: '', lang: 'en anglais',
+        note: 'Des scientifiques répondent à la question. La plupart versent les céréales d’abord, pour éviter les éclaboussures. L’un d’eux verse le lait en dernier pour que les céréales ne ramollissent pas.' },
+      ananas: { org: 'RTBF', date: '10 juin 2017', lang: '',
+        note: 'Sam Panopoulos, immigré grec installé au Canada, a ajouté de l’ananas à une pizza au jambon en 1962, dans son restaurant de Chatham, en Ontario.' },
+      chocolatine: { org: 'Le Bonbon', date: '6 décembre 2016', lang: '',
+        note: 'D’après une enquête en ligne du linguiste Mathieu Avanzi (plus de 10 000 réponses), « chocolatine » s’emploie surtout dans l’Ouest, et particulièrement dans le Sud-Ouest.' },
+      vitesse: { org: 'ONISR', date: '31 janvier 2020', lang: '',
+        note: 'Sur ces routes, la mortalité a baissé de 209 tués la première année, par rapport à la moyenne 2013-2017. Le Cerema estime une baisse de 13 % par rapport à l’évolution du reste du réseau.' },
+      teletravail: { org: 'Insee', date: '14 octobre 2025', lang: '',
+        note: 'En 2023, environ un quart des salariés télétravaillent au moins quelques demi-journées par mois, contre 9 % en 2019. Le télétravail de trois jours ou plus par semaine est revenu à 5 %.' },
+      reseaux: { org: 'LCP – Assemblée nationale', date: '11 septembre 2025', lang: '',
+        note: 'La rapporteure formule 43 recommandations, dont une interdiction aux moins de 15 ans à l’échelle européenne. Le président de la commission juge ce seuil insuffisant et propose des mesures complémentaires.' },
+      mourir: { org: 'Comité consultatif national d’éthique', date: '13 septembre 2022', lang: '',
+        note: 'Le CCNE estime qu’une aide active à mourir peut être éthiquement acceptable à certaines conditions strictes, avec un renforcement des soins palliatifs et une clause de conscience pour les soignants.' },
+      immigration: { org: 'Insee', date: '18 novembre 2025', lang: '',
+        note: 'En 2024, la France hors Mayotte compte 7,6 millions d’immigrés (11,2 % de la population), dont 34 % ont la nationalité française. Les descendants d’immigrés sont 8,0 millions.' },
+      peine: { org: 'Assemblée nationale', date: '', lang: '',
+        note: 'Le 18 septembre 1981, l’Assemblée adopte l’abolition par 363 voix contre 117, puis le Sénat par 160 contre 126. La loi est promulguée le 9 octobre 1981, dans une opinion souvent réticente.' }
+    },
+    en: {
+      lait: { org: 'I’m a Scientist', date: '', lang: '',
+        note: 'Scientists answer the question. Most pour the cereal first, to avoid splashes. One of them pours the milk last so the cereal doesn’t go soggy.' },
+      ananas: { org: 'RTBF', date: 'June 10, 2017', lang: 'in French',
+        note: 'Sam Panopoulos, a Greek immigrant who settled in Canada, added pineapple to a ham pizza in 1962 at his restaurant in Chatham, Ontario.' },
+      chocolatine: { org: 'Le Bonbon', date: 'December 6, 2016', lang: 'in French',
+        note: 'According to an online survey by linguist Mathieu Avanzi (over 10,000 responses), “chocolatine” is used mostly in the west of France, and especially in the south-west.' },
+      vitesse: { org: 'ONISR', date: 'January 31, 2020', lang: 'in French',
+        note: 'On these roads, deaths fell by 209 in the first year, compared with the 2013-2017 average. Cerema estimates a 13% drop compared with the trend on the rest of the network.' },
+      teletravail: { org: 'Insee', date: 'October 14, 2025', lang: 'in French',
+        note: 'In 2023, about a quarter of employees work from home at least a few half-days a month, up from 9% in 2019. Remote work of three or more days a week is back down to 5%.' },
+      reseaux: { org: 'LCP – French National Assembly', date: 'September 11, 2025', lang: 'in French',
+        note: 'The rapporteur makes 43 recommendations, including a Europe-wide ban for under-15s. The committee chair finds that threshold insufficient and proposes additional measures.' },
+      mourir: { org: 'French National Consultative Ethics Committee', date: 'September 13, 2022', lang: 'in French',
+        note: 'The CCNE considers that assisted dying may be ethically acceptable under certain strict conditions, with stronger palliative care and a conscience clause for caregivers.' },
+      immigration: { org: 'Insee', date: 'November 18, 2025', lang: 'in French',
+        note: 'In 2024, France excluding Mayotte has 7.6 million immigrants (11.2% of the population), 34% of whom hold French nationality. Descendants of immigrants number 8.0 million.' },
+      peine: { org: 'French National Assembly', date: '', lang: 'in French',
+        note: 'On September 18, 1981, the Assembly adopted abolition by 363 votes to 117, then the Senate by 160 to 126. The law was promulgated on October 9, 1981, amid often reluctant public opinion.' }
+    }
+  };
+  function pc(n) { return t('pct', n); }
+
+
+  /* Illustrations minimalistes des cartes : traits = couleur du texte, aplats = orange / jaune / blanc */
+  var SW = 'stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"';
+  var ART = {
+    lait: '<svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 4c7 10 11 15 11 21a11 11 0 0 1-22 0c0-6 4-11 11-21z" fill="#FFFFFF" ' + SW + '/><path d="M20 46h80a40 34 0 0 1-80 0z" fill="#FFDD00" ' + SW + '/><circle cx="44" cy="40" r="6" fill="#FF4D00" stroke="currentColor" stroke-width="3"/><circle cx="62" cy="38" r="6" fill="#FF4D00" stroke="currentColor" stroke-width="3"/><circle cx="79" cy="41" r="6" fill="#FF4D00" stroke="currentColor" stroke-width="3"/></svg>',
+    ananas: '<svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 84L20 22Q60 4 100 22z" fill="#FFDD00" ' + SW + '/><path d="M20 22Q60 4 100 22" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><rect x="46" y="30" width="13" height="13" transform="rotate(18 52 36)" fill="#FF4D00" stroke="currentColor" stroke-width="3"/><rect x="66" y="38" width="13" height="13" transform="rotate(-14 72 44)" fill="#FF4D00" stroke="currentColor" stroke-width="3"/><rect x="55" y="55" width="11" height="11" transform="rotate(25 60 60)" fill="#FF4D00" stroke="currentColor" stroke-width="3"/></svg>',
+    chocolatine: '<svg viewBox="0 0 120 90" aria-hidden="true"><rect x="18" y="24" width="84" height="44" rx="22" fill="#FFDD00" ' + SW + '/><path d="M44 27v38M60 27v38M76 27v38" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/></svg>',
+    vitesse: '<svg viewBox="0 0 120 90" aria-hidden="true"><circle cx="60" cy="45" r="36" fill="#FFFFFF" stroke="#FF4D00" stroke-width="10"/><circle cx="60" cy="45" r="41" fill="none" stroke="currentColor" stroke-width="3"/><text x="60" y="57" text-anchor="middle" font-family="Archivo, Arial, sans-serif" font-weight="900" font-size="34" fill="#0A1A24">80</text></svg>',
+    teletravail: '<svg viewBox="0 0 120 90" aria-hidden="true"><path d="M16 46L60 12l44 34v34H16z" fill="#FFDD00" ' + SW + '/><rect x="42" y="46" width="36" height="22" fill="#FF4D00" stroke="currentColor" stroke-width="4"/><path d="M34 74h52" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/></svg>',
+    reseaux: '<svg viewBox="0 0 120 90" aria-hidden="true"><rect x="38" y="6" width="44" height="78" rx="9" fill="#FFFFFF" ' + SW + '/><path d="M47 30h26M47 42h26M47 54h16" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/><circle cx="84" cy="20" r="13" fill="#FF4D00" stroke="currentColor" stroke-width="4"/><text x="84" y="25" text-anchor="middle" font-family="Archivo, Arial, sans-serif" font-weight="900" font-size="14" fill="#0A1A24">15</text></svg>',
+    mourir: '<svg viewBox="0 0 120 90" aria-hidden="true"><path d="M42 12h36L60 44z" fill="#FFDD00" ' + SW + '/><path d="M60 46l19 34H41z" fill="#FF4D00" ' + SW + '/><path d="M36 10h48M36 82h48" stroke="currentColor" stroke-width="6" stroke-linecap="round" fill="none"/></svg>',
+    immigration: '<svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 4v82" stroke="currentColor" stroke-width="3" stroke-dasharray="4 6" fill="none"/><path d="M12 20h52v-10l32 17-32 17V34H12z" fill="#FF4D00" ' + SW + '/><path d="M108 58H56V48L24 65l32 17V72h52z" fill="#FFDD00" ' + SW + '/></svg>',
+    peine: '<svg viewBox="0 0 120 90" aria-hidden="true"><path d="M60 12v66M38 80h44M20 26h80" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M20 26L9 54M20 26l11 28M100 26L89 54M100 26l11 28" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M7 54h26a13 9 0 0 1-26 0z" fill="#FFDD00" ' + SW + '/><path d="M87 54h26a13 9 0 0 1-26 0z" fill="#FF4D00" ' + SW + '/></svg>'
+  };
+
+  var CATS = [
+    { id: 'fun', level: 1, items: [{ id: 'lait' }, { id: 'ananas' }, { id: 'chocolatine' }] },
+    { id: 'spicy', level: 2, items: [{ id: 'vitesse' }, { id: 'teletravail' }, { id: 'reseaux' }] },
+    { id: 'hot', level: 3, items: [{ id: 'mourir' }, { id: 'immigration' }, { id: 'peine' }] }
+  ];
+  function refreshCats() {
+    CATS.forEach(function (c) {
+      c.label = CT[LANG].cats[c.id];
+      c.items.forEach(function (it) { var x = CT[LANG].th[it.id]; it.title = x.title; it.sub = x.sub; it.q = x.q; });
+    });
+  }
+
+  var SRC = {
+    lait: { title: 'What comes first, cereal then milk, or milk then cereal?',
+      url: 'https://archive.imascientist.org.uk/childhoodm20-zone/question/what-comes-first-cereal-then-milk-or-milk-then-cereal/index.html' },
+    ananas: { title: 'Le créateur de la pizza hawaïenne, Sam Panopoulos, est décédé',
+      url: 'https://www.rtbf.be/info/societe/detail_le-createur-de-la-pizza-hawaienne-sam-panopoulos-est-decede?id=9630415' },
+    chocolatine: { title: 'Pain au chocolat ou chocolatine : la carte des expressions régionales',
+      url: 'https://www.lebonbon.fr/paris/societe/pain-au-chocolat-ou-chocolatine-les-expressions-regionales/' },
+    vitesse: { title: 'Bilan à 18 mois de la mesure d’abaissement de la vitesse maximale autorisée à 80 km/h',
+      url: 'https://www.onisr.securite-routiere.gouv.fr/sites/default/files/2020-01/2020%2001%2031%20Bilan%20%C3%A0%2018%20mois%20de%20la%20mesure%20VMA80.pdf' },
+    teletravail: { title: 'Pratique du télétravail',
+      url: 'https://www.insee.fr/fr/statistiques/8616841' },
+    reseaux: { title: 'Commission d’enquête TikTok : le rapport préconise l’interdiction des réseaux sociaux aux moins de 15 ans',
+      url: 'https://lcp.fr/actualites/commission-d-enquete-tiktok-le-rapport-preconise-l-interdiction-des-reseaux-sociaux-aux' },
+    mourir: { title: 'Avis 139 : questions éthiques relatives aux situations de fin de vie',
+      url: 'https://www.ccne-ethique.fr/sites/default/files/2022-09/Communique%20de%20Presse%20avis%20139.pdf' },
+    immigration: { title: 'Immigrés et descendants d’immigrés',
+      url: 'https://www.insee.fr/fr/statistiques/8612512' },
+    peine: { title: 'Abolition de la peine de mort',
+      url: 'https://www2.assemblee-nationale.fr/decouvrir-l-assemblee/histoire/abolition-de-la-peine-de-mort' }
+  };
+  function refreshSrc() {
+    Object.keys(SRC).forEach(function (k) { var x = ST[LANG][k]; SRC[k].org = x.org; SRC[k].date = x.date; SRC[k].lang = x.lang; SRC[k].note = x.note; });
+  }
+
+  var DUR = [3, 5, 10, 20];
+  var CAPS = [30, 60, 120, 0];
+  var S = { screen: 'home', cat: 'fun', card: 0, theme: null, dur: 10, cap: 60, sound: true, tension: true, sens: 75 };
+  var D = null, timer = null, actx = null, wl = null, popTimer = 0, raf = 0, els = {};
+  var MIC = { stream: null, src: null, an: null, buf: null, timer: 0, lvl: 0, hot: 0, last: 0, cool: 0, flash: 0, ask: null, state: 'off' };
+  var calmTimer = 0, calmEnd = 0;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function fmt(ms, ceil) {
+    var s = Math.max(0, ceil ? Math.ceil(ms / 1000) : Math.floor(ms / 1000));
+    return Math.floor(s / 60) + ':' + pad(s % 60);
+  }
+  function fmtLong(sec) { var m = Math.floor(sec / 60), s = sec % 60; return (m ? m + ' min' : '') + (m && s ? ' ' : '') + (s ? s + ' s' : ''); }
+  function setText(el, t) { if (el.textContent !== t) el.textContent = t; }
+  function setAttr(el, a, v) { if (el.getAttribute(a) !== String(v)) el.setAttribute(a, v); }
+  function name(k) { var v = $('in-' + k).value.trim(); return v || t(k === 'o' ? 'defO' : 'defY'); }
+  function curCat() { return CATS.filter(function (c) { return c.id === S.cat; })[0]; }
+  function themeQ(id) {
+    for (var i = 0; i < CATS.length; i++) for (var j = 0; j < CATS[i].items.length; j++) if (CATS[i].items[j].id === id) return CATS[i].items[j].q;
+    return null;
+  }
+  function announce(t) { $('live').textContent = ''; setTimeout(function () { $('live').textContent = t; }, 30); }
+
+  /* ---------- Navigation ---------- */
+  var IDS = { home: 's-home', theme: 's-theme', set: 's-set', how: 's-how', debate: 's-debate', end: 's-end' };
+  function show(n) {
+    S.screen = n;
+    Object.keys(IDS).forEach(function (k) { $(IDS[k]).hidden = k !== n; });
+    var sc = $(IDS[n]); sc.scrollTop = 0;
+    var h = sc.querySelector('h1[tabindex]');
+    if (h) { try { h.focus({ preventScroll: true }); } catch (e) {} }
+    if (n === 'theme') requestAnimationFrame(function () { fan(); });
+  }
+  var BACK = { 1: 'home', 2: 'theme', 3: 'set' };
+  function buildTops() {
+    Array.prototype.forEach.call(document.querySelectorAll('.top'), function (tp) {
+      var step = +tp.getAttribute('data-step');
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'back'; b.setAttribute('aria-label', t('back'));
+      b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H5M11 5l-7 7 7 7"/></svg>';
+      b.addEventListener('click', function () { show(BACK[step]); });
+      var w = document.createElement('div'); w.className = 'steps';
+      var ol = document.createElement('ol'); ol.className = 'pips'; ol.setAttribute('aria-label', t('step', step));
+      for (var i = 1; i <= 3; i++) { var li = document.createElement('li'); if (i <= step) li.className = 'on'; ol.appendChild(li); }
+      var n = document.createElement('span'); n.className = 'num'; n.textContent = step + '/3'; n.setAttribute('aria-hidden', 'true');
+      w.appendChild(ol); w.appendChild(n); tp.appendChild(b); tp.appendChild(w);
+    });
+  }
+
+  /* ---------- Thème : onglets + deck ---------- */
+  function pips(level) {
+    var l = document.createElement('span'); l.className = 'lvl'; l.setAttribute('role', 'img'); l.setAttribute('aria-label', t('intensity', level));
+    for (var i = 0; i < 3; i++) { var q = document.createElement('i'); if (i < level) q.className = 'f'; l.appendChild(q); }
+    return l;
+  }
+  function syncTabs() {
+    CATS.forEach(function (c) { var b = $('tab-' + c.id), sel = c.id === S.cat; setAttr(b, 'aria-selected', sel); b.tabIndex = sel ? 0 : -1; });
+  }
+  function selectCat(id) { S.cat = id; syncTabs(); renderDeck(); }
+  function buildTabs() {
+    var box = $('tabs');
+    CATS.forEach(function (c) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + c.id;
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-controls', 'deck');
+      var tl = document.createElement('span'); tl.textContent = c.label;
+      var l = pips(c.level); l.setAttribute('aria-hidden', 'true'); l.removeAttribute('role'); l.removeAttribute('aria-label');
+      b.appendChild(tl); b.appendChild(l);
+      b.addEventListener('click', function () { selectCat(c.id); });
+      b.addEventListener('keydown', function (e) {
+        var i = CATS.indexOf(c), n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (n) { e.preventDefault(); var nx = CATS[(i + n + 3) % 3]; selectCat(nx.id); $('tab-' + nx.id).focus(); }
+      });
+      box.appendChild(b);
+    });
+    syncTabs();
+  }
+  function renderDeck() {
+    var ci = CATS.indexOf(curCat()), c = CATS[ci], track = $('track'), dots = $('dots');
+    track.innerHTML = ''; dots.innerHTML = '';
+    c.items.forEach(function (it, i) {
+      var w = document.createElement('div'); w.className = 'tcw';
+      var card = document.createElement('article'); card.className = 'tc tc-' + c.id;
+      card.setAttribute('role', 'group'); card.setAttribute('aria-roledescription', t('cardWord'));
+      card.setAttribute('aria-label', it.title + ', ' + t('cardOf', i + 1));
+      var h = document.createElement('div'); h.className = 'tc-h';
+      var ttl = document.createElement('h3'); ttl.textContent = it.title;
+      var lv = pips(c.level); h.appendChild(ttl); h.appendChild(lv);
+      var a = document.createElement('div'); a.className = 'tc-art'; a.setAttribute('aria-hidden', 'true'); a.innerHTML = ART[it.id];
+      var d = document.createElement('p'); d.className = 'tc-d'; d.textContent = it.sub;
+      var f = document.createElement('div'); f.className = 'tc-f';
+      var f1 = document.createElement('span'); f1.textContent = c.label;
+      var f2 = document.createElement('span'); f2.className = 'num'; f2.textContent = pad(ci * 3 + i + 1) + '/09';
+      f.appendChild(f1); f.appendChild(f2);
+      card.appendChild(h); card.appendChild(a); card.appendChild(d); card.appendChild(f);
+      card.addEventListener('click', function () { if (S.card !== i) toCard(i); });
+      w.appendChild(card); track.appendChild(w);
+      var dot = document.createElement('button'); dot.type = 'button'; dot.className = 'dot-b';
+      dot.setAttribute('aria-label', t('cardOfCap', i + 1)); dot.addEventListener('click', function () { toCard(i); });
+      dots.appendChild(dot);
+    });
+    S.card = 0; $('deck').scrollLeft = 0; syncDeck();
+    requestAnimationFrame(function () { fan(); });
+  }
+  function syncDeck() {
+    var c = curCat(), it = c.items[S.card];
+    Array.prototype.forEach.call($('dots').children, function (d, i) { d.setAttribute('aria-current', i === S.card ? 'true' : 'false'); });
+    $('choose').setAttribute('aria-label', t('chooseAria', it.title));
+  }
+  function toCard(i) {
+    var d = $('deck'), k = $('track').children[i]; if (!k) return;
+    d.scrollTo({ left: k.offsetLeft + k.offsetWidth / 2 - d.clientWidth / 2, behavior: reduce ? 'auto' : 'smooth' });
+  }
+  function fan() {
+    raf = 0;
+    var d = $('deck'), kids = $('track').children;
+    if (!kids.length || !d.clientWidth) return;
+    var mid = d.scrollLeft + d.clientWidth / 2, best = 0, bd = 1e9;
+    for (var i = 0; i < kids.length; i++) {
+      var k = kids[i], off = (k.offsetLeft + k.offsetWidth / 2 - mid) / k.offsetWidth, ad = Math.min(Math.abs(off), 2);
+      k.style.setProperty('--d', Math.max(-2, Math.min(2, off)).toFixed(3));
+      k.style.setProperty('--ad', ad.toFixed(3));
+      k.style.zIndex = String(10 - Math.round(ad * 3));
+      if (ad < bd) { bd = ad; best = i; }
+    }
+    if (best !== S.card) { S.card = best; syncDeck(); }
+  }
+
+  /* ---------- Réglages ---------- */
+  function buildSeg(boxId, values, key, label) {
+    var box = $(boxId);
+    values.forEach(function (v) {
+      var lab = document.createElement('label');
+      var inp = document.createElement('input'); inp.type = 'radio'; inp.name = key; inp.value = v; inp.className = 'sr';
+      var tl = document.createElement('span'); tl.textContent = label(v);
+      lab.appendChild(inp); lab.appendChild(tl); box.appendChild(lab);
+      inp.addEventListener('change', function () { S[key] = v; syncSettings(); });
+    });
+  }
+  function syncSettings() {
+    ['dur', 'cap'].forEach(function (k) {
+      Array.prototype.forEach.call(document.querySelectorAll('#seg-' + k + ' input'), function (i) {
+        i.checked = +i.value === S[k]; i.parentNode.classList.toggle('on', i.checked);
+      });
+    });
+    var share = fmtLong(Math.round(S.dur * 30));
+    $('cap-help').textContent = t('capHelp', S.cap, fmtLong(S.cap), share, S.dur);
+  }
+
+  /* ---------- Audio, vibration, écran allumé ---------- */
+  function prime() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} }
+  function beep(f, d) {
+    if (!S.sound || !actx) return;
+    try { var o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; g.gain.value = 0.1; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + d); } catch (e) {}
+  }
+  function buzz() { try { if (navigator.vibrate) navigator.vibrate(220); } catch (e) {} }
+  function wake() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { wl = l; }, function () {}); } catch (e) {} }
+  function unwake() { try { if (wl) { wl.release(); wl = null; } } catch (e) {} }
+
+
+  /* ---------- Détecteur de volume (micro) ---------- */
+  /* Estimation : le niveau est relatif au micro de l'appareil, pas un sonomètre calibré. */
+  var DB_MIN = 30, DB_MAX = 100, DB_OFFSET = 120, HOT_MS = 3000;
+  function gaugePos(db) { return Math.max(0, Math.min(100, (db - DB_MIN) / (DB_MAX - DB_MIN) * 100)); }
+  function paintGauge() {
+    var g = $('gauge'), on = S.tension;
+    g.hidden = !on;
+    if (!on) return;
+    var live = MIC.state === 'ok';
+    g.classList.toggle('na', !live);
+    $('g-thr').style.left = gaugePos(S.sens) + '%';
+    setAttr(g, 'aria-label', t('gaugeAria', S.sens));
+    if (Date.now() < MIC.flash) setText($('g-val'), t('gLimit', S.sens));
+    else if (live) {
+      $('g-fill').style.width = gaugePos(MIC.lvl) + '%';
+      $('g-fill').classList.toggle('hot', MIC.lvl >= S.sens);
+      setText($('g-val'), Math.round(MIC.lvl) + ' dB');
+    } else {
+      setText($('g-val'), MIC.state === 'denied' ? t('gSim') : t('gWait'));
+      if (MIC.state === 'denied') setAttr(g, 'aria-label', t('gaugeDenied'));
+    }
+    micNote();
+  }
+  function micNote() {
+    var msg = !S.tension ? '' : MIC.state === 'ok' ? t('micOk') : MIC.state === 'denied' ? t('micDenied') : t('micWait');
+    setText($('x-mic'), msg);
+  }
+  function startMic() {
+    if (!S.tension || MIC.state === 'ok' || MIC.ask) { paintGauge(); return; }
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { MIC.state = 'denied'; paintGauge(); return; }
+    MIC.state = 'wait';
+    MIC.ask = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (st) {
+      MIC.ask = null;
+      if (!S.tension) { st.getTracks().forEach(function (t) { t.stop(); }); MIC.state = 'off'; return; }
+      prime();
+      MIC.stream = st; MIC.src = actx.createMediaStreamSource(st);
+      MIC.an = actx.createAnalyser(); MIC.an.fftSize = 2048; MIC.buf = new Float32Array(MIC.an.fftSize);
+      MIC.src.connect(MIC.an);
+      MIC.state = 'ok'; MIC.lvl = DB_MIN; MIC.last = Date.now();
+      clearInterval(MIC.timer); MIC.timer = setInterval(micTick, 100);
+      paintGauge();
+    }, function () { MIC.ask = null; MIC.state = 'denied'; paintGauge(); });
+    paintGauge();
+  }
+  function stopMic() {
+    clearInterval(MIC.timer); MIC.timer = 0;
+    try { if (MIC.src) MIC.src.disconnect(); } catch (e) {}
+    try { if (MIC.stream) MIC.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    MIC.stream = MIC.src = MIC.an = null; MIC.state = 'off'; MIC.hot = 0; MIC.lvl = DB_MIN;
+  }
+  function micTick() {
+    if (!MIC.an) return;
+    var now = Date.now(), dt = Math.min(now - MIC.last, 500); MIC.last = now;
+    MIC.an.getFloatTimeDomainData(MIC.buf);
+    var sum = 0, n = MIC.buf.length;
+    for (var i = 0; i < n; i++) sum += MIC.buf[i] * MIC.buf[i];
+    var rms = Math.sqrt(sum / n), db = rms > 1e-6 ? 20 * Math.log10(rms) + DB_OFFSET : DB_MIN;
+    db = Math.max(DB_MIN, Math.min(DB_MAX, db));
+    MIC.lvl += (db - MIC.lvl) * (db > MIC.lvl ? 0.5 : 0.2);
+    paintGauge();
+    if (!D || !D.running || S.screen !== 'debate' || now < MIC.cool) { MIC.hot = 0; return; }
+    MIC.hot = MIC.lvl >= S.sens ? MIC.hot + dt : Math.max(0, MIC.hot - dt);
+    if (MIC.hot >= HOT_MS) showCalm();
+  }
+
+  /* Popup « petite tension » : met le débat en pause */
+  function showCalm() {
+    MIC.hot = 0; hideLast();
+    D.ovWasRunning = D.running; D.running = false;
+    setText($('calm-eye'), t('calmEye')); setText($('h-calm'), t('calmTitle'));
+    setText($('calm-q'), t('calmQ'));
+    $('calm-time').hidden = true; $('calm-pause').hidden = false; setText($('calm-go'), t('calmGo'));
+    beep(520, 0.4); buzz(); announce(t('calmAnn'));
+    openOv('ov-calm', 'calm-pause');
+  }
+  function calmLeft() { return Math.max(0, calmEnd - Date.now()); }
+  function startCalmPause() {
+    clearInterval(calmTimer); calmEnd = Date.now() + 5 * 60000;
+    setText($('calm-eye'), t('calmPEye')); setText($('h-calm'), t('calmPTitle'));
+    setText($('calm-q'), t('calmPQ'));
+    $('calm-time').hidden = false; $('calm-pause').hidden = true; setText($('calm-go'), t('calmPGo'));
+    setText($('calm-time'), fmt(calmLeft(), true));
+    try { $('calm-go').focus({ preventScroll: true }); } catch (e) {}
+    calmTimer = setInterval(function () {
+      var l = calmLeft(); setText($('calm-time'), fmt(l, true));
+      if (l <= 0) { clearInterval(calmTimer); setText($('h-calm'), t('calmDTitle')); setText($('calm-q'), t('calmDQ')); beep(740, 0.4); buzz(); announce(t('calmDoneAnn')); }
+    }, 250);
+  }
+  function closeCalm(paused) {
+    clearInterval(calmTimer); closeOv('ov-calm');
+    MIC.hot = 0; MIC.cool = Date.now() + (paused ? 15000 : 45000);
+    if (D.ovWasRunning) resume();
+  }
+
+  /* ---------- Débat ---------- */
+  function startDebate() {
+    prime(); MIC.hot = 0; MIC.cool = Date.now() + 2000; startMic();
+    D = { running: true, active: null, ms: { o: 0, y: 0 }, turnMs: { o: 0, y: 0 }, turns: { o: 0, y: 0 }, longest: { o: 0, y: 0 },
+      warned: { o: false, y: false }, elapsed: 0, totalMs: S.dur * 60000, last: Date.now(), ovWasRunning: false, confirming: false, minuteShown: false };
+    ['o', 'y'].forEach(function (k) {
+      var b = $('sq-' + k);
+      els[k] = { btn: b, name: b.querySelector('.sq-name'), left: b.querySelector('.sq-left b'), time: b.querySelector('.sq-time'),
+        turn: b.querySelector('.turn'), fill: b.querySelector('.turn-bar i'), turnTxt: b.querySelector('.turn-txt'), hint: b.querySelector('.sq-hint') };
+      els[k].name.textContent = name(k);
+    });
+    ['ov-pause', 'ov-src', 'ov-ai', 'ov-calm', 'ov-end', 'pop-last'].forEach(function (i) { $(i).hidden = true; });
+    show('debate'); paint(); wake();
+    clearInterval(timer); timer = setInterval(tick, 200);
+  }
+
+  function endTurn() { if (D.active) { D.longest[D.active] = Math.max(D.longest[D.active], D.turnMs[D.active]); D.active = null; } }
+  function tap(k) {
+    if (!D || !D.running) return;
+    if (D.active === k) { endTurn(); announce(t('annPass', name(k))); }
+    else { endTurn(); D.active = k; D.turns[k]++; D.turnMs[k] = 0; D.warned[k] = false; announce(t('annTake', name(k))); }
+    paint();
+  }
+
+  function hideLast() { clearTimeout(popTimer); $('pop-last').hidden = true; }
+  function showLast() {
+    $('pop-last').hidden = false; beep(740, 0.35); buzz();
+    clearTimeout(popTimer); popTimer = setTimeout(hideLast, 9000);
+  }
+
+  function tick() {
+    if (!D) return;
+    var now = Date.now(), d = Math.min(now - D.last, 2000); D.last = now;
+    if (!D.running || S.screen !== 'debate') return;
+    D.elapsed += d;
+    var a = D.active;
+    if (a) {
+      D.ms[a] += d; D.turnMs[a] += d;
+      if (S.cap && D.turnMs[a] >= S.cap * 1000 && !D.warned[a]) { D.warned[a] = true; beep(880, 0.3); buzz(); announce(t('annOver', name(a))); }
+    }
+    if (!D.minuteShown && D.totalMs - D.elapsed <= 60000 && D.elapsed < D.totalMs) { D.minuteShown = true; showLast(); }
+    if (D.elapsed >= D.totalMs) {
+      D.elapsed = D.totalMs; endTurn(); D.running = false; hideLast(); beep(660, 0.6); buzz(); paint(); openOv('ov-end', 'see-end'); return;
+    }
+    paint();
+  }
+
+  function paint() {
+    var rem = D.totalMs - D.elapsed;
+    ['o', 'y'].forEach(function (k) {
+      var e = els[k], isA = D.active === k;
+      setText(e.left, fmt(rem, true)); setText(e.time, fmt(D.ms[k]));
+      var over = isA && S.cap > 0 && D.turnMs[k] >= S.cap * 1000;
+      e.btn.classList.toggle('active', isA);
+      e.btn.classList.toggle('dim', !!D.active && !isA);
+      e.btn.classList.toggle('over', over);
+      e.turn.hidden = !isA;
+      if (isA) {
+        setText(e.turnTxt, t('turnTxt', fmt(D.turnMs[k]), S.cap ? fmt(S.cap * 1000) : ''));
+        e.fill.parentNode.hidden = !S.cap;
+        e.fill.style.width = S.cap ? Math.min(100, D.turnMs[k] / (S.cap * 1000) * 100) + '%' : '0%';
+      }
+      setText(e.hint, isA ? (over ? t('hintOver') : t('hintPass')) : t('hintSpeak'));
+      setAttr(e.btn, 'aria-pressed', isA);
+      setAttr(e.btn, 'aria-label', t('btnAria', name(k), isA, fmt(D.ms[k])));
+    });
+    var tot = D.ms.o + D.ms.y, py = tot ? Math.round(D.ms.y / tot * 100) : 50;
+    $('m-y').style.width = py + '%';
+    setText($('p-y'), tot ? pc(py) : '—'); setText($('p-o'), tot ? pc(100 - py) : '—');
+    setAttr($('meter'), 'aria-label', tot ? t('meterSplit', name('y'), py, name('o'), 100 - py) : t('meterNone'));
+  }
+
+  /* Fenêtres */
+  function openOv(id, focusId) { $(id).hidden = false; var f = $(focusId); if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} } }
+  function closeOv(id) { $(id).hidden = true; }
+  function resume() { D.running = true; D.last = Date.now(); paint(); }
+
+  function openPause() {
+    if (!D || !D.running) return;
+    D.running = false; D.confirming = false; setText($('finish'), t('finish'));
+    setText($('pause-info'), t('pauseInfo', fmt(D.totalMs - D.elapsed, true), S.dur, name('o'), fmt(D.ms.o), name('y'), fmt(D.ms.y)));
+    openOv('ov-pause', 'resume');
+  }
+  function openSources() {
+    if (!D) return;
+    D.ovWasRunning = D.running; D.running = false;
+    var q = themeQ(S.theme), s = SRC[S.theme], card = $('src-card'), link = $('src-link');
+    card.innerHTML = '';
+    function add(tag, cls, txt) { var n = document.createElement(tag); if (cls) n.className = cls; n.textContent = txt; card.appendChild(n); }
+    if (s) {
+      setText($('h-src'), q);
+      add('p', 'meta', [s.org, s.date, s.lang].filter(Boolean).join(' · '));
+      add('h3', '', s.title); add('p', '', s.note);
+      link.href = s.url; link.hidden = false; link.textContent = t('srcOpen');
+    } else {
+      setText($('h-src'), t('freeSrcTitle'));
+      add('p', '', t('freeSrcNote'));
+      link.hidden = true; link.removeAttribute('href');
+    }
+    openOv('ov-src', 'src-close');
+  }
+  function closeSources() { closeOv('ov-src'); if (D.ovWasRunning) resume(); }
+  function openAI() {
+    if (!D) return;
+    D.ovWasRunning = D.running; D.running = false;
+    openOv('ov-ai', 'ai-close');
+  }
+  function closeAI() { closeOv('ov-ai'); if (D.ovWasRunning) resume(); }
+
+  /* ---------- Bilan ---------- */
+  function chartEnt(endMs) {
+    var data = [42, 47, 55, 50, 38, 44, 58, 63, 60, 68, 73, 78], x0 = 30, x1 = 292, y0 = 6, y1 = 56;
+    function X(i) { return x0 + (x1 - x0) * i / (data.length - 1); }
+    function Y(v) { return y1 - (y1 - y0) * v / 100; }
+    var pts = data.map(function (v, i) { return X(i).toFixed(1) + ',' + Y(v).toFixed(1); });
+    var line = 'M' + pts.join(' L'), area = line + ' L' + x1 + ',' + y1 + ' L' + x0 + ',' + y1 + ' Z';
+    var lo = data.indexOf(Math.min.apply(null, data));
+    return '<svg class="ch" viewBox="0 0 300 76" role="img" aria-label="' + t('chEnt') + '">' +
+      [0, 50, 100].map(function (v) { return '<path class="g" d="M' + x0 + ' ' + Y(v) + 'H' + x1 + '"/><text x="' + (x0 - 5) + '" y="' + (Y(v) + 3) + '" text-anchor="end">' + v + '</text>'; }).join('') +
+      '<path class="ar" d="' + area + '"/><path class="ln" d="' + line + '"/>' +
+      '<text x="' + X(lo).toFixed(1) + '" y="' + (Y(data[lo]) + 15).toFixed(1) + '" text-anchor="middle">' + t('chTension') + '</text>' +
+      '<circle class="pt" cx="' + X(data.length - 1).toFixed(1) + '" cy="' + Y(78).toFixed(1) + '" r="4.5"/>' +
+      '<text x="' + x0 + '" y="72">0:00</text><text x="' + x1 + '" y="72" text-anchor="end">' + fmt(endMs) + '</text></svg>';
+  }
+  function chartDb(endMs) {
+    var v = [52, 55, 58, 56, 60, 63, 61, 66, 70, 74, 72, 68, 65, 69, 76, 81, 78, 72, 67, 64, 62, 66, 70, 68, 63, 60, 57, 61, 58, 55];
+    var x0 = 30, x1 = 292, y0 = 3, y1 = 42, n = v.length, step = (x1 - x0) / n, bw = step * 0.74;
+    function Y(d) { return y1 - (y1 - y0) * (d - 40) / 50; }
+    var bars = v.map(function (d, i) { return '<rect class="b' + (d > 70 ? ' hi' : '') + '" x="' + (x0 + i * step + (step - bw) / 2).toFixed(1) + '" y="' + Y(d).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (y1 - Y(d)).toFixed(1) + '"/>'; }).join('');
+    var avg = Math.round(v.reduce(function (a, b) { return a + b; }, 0) / n), peak = Math.max.apply(null, v);
+    $('cap-db').textContent = t('capDb', peak, avg);
+    return '<svg class="ch" viewBox="0 0 300 56" role="img" aria-label="' + t('chDb', avg, peak) + '">' +
+      bars + '<path class="th" d="M' + x0 + ' ' + Y(70) + 'H' + x1 + '"/><text x="' + (x0 - 5) + '" y="' + (Y(70) + 3) + '" text-anchor="end">70</text>' +
+      '<text x="' + (x0 - 5) + '" y="' + (y1 + 1) + '" text-anchor="end">40</text>' +
+      '<text x="' + x0 + '" y="54">0:00</text><text x="' + x1 + '" y="54" text-anchor="end">' + fmt(endMs) + '</text></svg>';
+  }
+  function selectEndTab(pro) {
+    setAttr($('bt-sum'), 'aria-selected', !pro); setAttr($('bt-pro'), 'aria-selected', pro);
+    $('bt-sum').tabIndex = pro ? -1 : 0; $('bt-pro').tabIndex = pro ? 0 : -1;
+    $('bp-sum').hidden = pro; $('bp-pro').hidden = !pro;
+  }
+
+  function finishDebate() {
+    endTurn(); D.running = false; clearInterval(timer); clearInterval(calmTimer); stopMic(); unwake(); hideLast();
+    ['ov-pause', 'ov-src', 'ov-ai', 'ov-calm', 'ov-end'].forEach(function (i) { $(i).hidden = true; });
+    var tot = D.ms.o + D.ms.y, py = tot ? Math.round(D.ms.y / tot * 100) : 50, po = 100 - py;
+    var q = themeQ(S.theme);
+    $('e-sub').textContent = t('eSub', q, fmt(D.elapsed), fmt(tot));
+    $('e-y').style.width = py + '%';
+    setText($('e-py'), tot ? pc(py) : '—'); setText($('e-po'), tot ? pc(po) : '—');
+    setAttr($('e-meter'), 'aria-label', tot ? t('meterFinal', name('y'), py, name('o'), po) : t('meterFinalNone'));
+    var v;
+    if (tot < 5000) v = t('vNone');
+    else if (Math.abs(py - po) <= 10) v = t('vBal');
+    else v = t('vTop', py > po ? name('y') : name('o'), Math.max(py, po));
+    $('e-verdict').textContent = v;
+    var rows = $('e-rows'); rows.innerHTML = '';
+    ['o', 'y'].forEach(function (k) {
+      var r = document.createElement('div'); r.className = 'res';
+      var sw = document.createElement('i'); sw.className = 'sw ' + k;
+      var mid = document.createElement('div'), b = document.createElement('b'), d = document.createElement('span'); d.className = 'd';
+      b.textContent = name(k);
+      d.textContent = t('turns', D.turns[k], fmt(D.longest[k]));
+      mid.appendChild(b); mid.appendChild(d);
+      var tm = document.createElement('span'); tm.className = 't'; tm.textContent = fmt(D.ms[k]);
+      r.appendChild(sw); r.appendChild(mid); r.appendChild(tm); rows.appendChild(r);
+    });
+    var endMs = Math.max(D.elapsed, 60000);
+    $('ch-ent').innerHTML = chartEnt(endMs); $('ch-db').innerHTML = chartDb(endMs);
+    $('cap-ent').textContent = t('capEnt');
+    selectEndTab(false);
+    show('end');
+  }
+
+  /* ---------- Événements ---------- */
+  $('go').addEventListener('click', function () { prime(); show('theme'); });
+  $('deck').addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(fan); }, { passive: true });
+  $('deck').addEventListener('keydown', function (e) {
+    var n = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (n) { e.preventDefault(); toCard(Math.max(0, Math.min(2, S.card + n))); }
+  });
+  window.addEventListener('resize', function () { if (!raf) raf = requestAnimationFrame(fan); });
+  $('choose').addEventListener('click', function () { S.theme = curCat().items[S.card].id; show('set'); });
+  $('free').addEventListener('click', function () { S.theme = 'none'; show('set'); });
+  $('sound').addEventListener('change', function () { S.sound = $('sound').checked; });
+  $('tension').addEventListener('change', function () { S.tension = $('tension').checked; });
+  $('gauge').addEventListener('click', function () {
+    if (MIC.state === 'denied') { if (D && D.running && S.screen === 'debate') showCalm(); return; }
+    if (MIC.state !== 'ok') return;
+    S.sens = S.sens === 80 ? 75 : S.sens === 75 ? 70 : 80; MIC.hot = 0; MIC.flash = Date.now() + 1800;
+    paintGauge(); setTimeout(paintGauge, 1850);
+    announce(t('annSens', S.sens));
+  });
+  $('calm-pause').addEventListener('click', startCalmPause);
+  $('calm-go').addEventListener('click', function () { closeCalm(!$('calm-time').hidden); });
+  $('set-next').addEventListener('click', function () {
+    if (S.tension) { prime(); startMic(); } else stopMic();
+    $('x-o').textContent = name('o'); $('x-y').textContent = name('y');
+    micNote();
+    $('x-theme').textContent = themeQ(S.theme) || t('freeTheme');
+    show('how');
+  });
+  $('start').addEventListener('click', startDebate);
+  $('sq-o').addEventListener('click', function () { tap('o'); });
+  $('sq-y').addEventListener('click', function () { tap('y'); });
+  $('btn-pause').addEventListener('click', openPause);
+  $('btn-src').addEventListener('click', openSources);
+  $('btn-ai').addEventListener('click', openAI);
+  $('pop-ok').addEventListener('click', hideLast);
+  $('resume').addEventListener('click', function () { closeOv('ov-pause'); resume(); });
+  $('finish').addEventListener('click', function () {
+    if (!D.confirming) { D.confirming = true; setText($('finish'), t('finishConfirm')); return; }
+    finishDebate();
+  });
+  $('src-close').addEventListener('click', closeSources);
+  $('ai-close').addEventListener('click', closeAI);
+  $('see-end').addEventListener('click', finishDebate);
+  $('extend').addEventListener('click', function () { D.totalMs += 120000; D.minuteShown = false; closeOv('ov-end'); resume(); });
+  $('bt-sum').addEventListener('click', function () { selectEndTab(false); });
+  $('bt-pro').addEventListener('click', function () { selectEndTab(true); });
+  ['bt-sum', 'bt-pro'].forEach(function (id) {
+    $(id).addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var pro = id === 'bt-sum'; selectEndTab(pro); $(pro ? 'bt-pro' : 'bt-sum').focus(); }
+    });
+  });
+  $('again').addEventListener('click', function () { S.theme = null; show('theme'); });
+  $('to-home').addEventListener('click', function () { S.theme = null; show('home'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!$('ov-src').hidden) closeSources();
+    else if (!$('ov-ai').hidden) closeAI();
+    else if (!$('pop-last').hidden) hideLast();
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && D && S.screen === 'debate') wake(); });
+
+  /* ---------- Application de la langue ---------- */
+  function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+  function applyLang() {
+    document.documentElement.lang = LANG;
+    each('[data-i]', function (el) { el.textContent = t(el.getAttribute('data-i')); });
+    each('[data-ia]', function (el) { el.setAttribute('aria-label', t(el.getAttribute('data-ia'))); });
+    each('[data-ip]', function (el) { el.setAttribute('placeholder', t(el.getAttribute('data-ip'))); });
+    $('deck').setAttribute('aria-roledescription', t('carousel'));
+    $('lang-fr').setAttribute('aria-pressed', String(LANG === 'fr')); $('lang-en').setAttribute('aria-pressed', String(LANG === 'en'));
+    each('.top', function (tp) {
+      var n = +tp.getAttribute('data-step');
+      tp.querySelector('.back').setAttribute('aria-label', t('back'));
+      tp.querySelector('.pips').setAttribute('aria-label', t('step', n));
+    });
+    CATS.forEach(function (c) { $('tab-' + c.id).firstChild.textContent = c.label; });
+    each('#seg-cap label', function (lab) { lab.querySelector('span').textContent = t('capLabel', +lab.querySelector('input').value); });
+    renderDeck(); syncSettings(); paintGauge();
+    $('x-o').textContent = name('o'); $('x-y').textContent = name('y');
+    if (S.theme) $('x-theme').textContent = themeQ(S.theme) || t('freeTheme');
+  }
+  function setLang(l) {
+    LANG = l === 'en' ? 'en' : 'fr';
+    try { localStorage.setItem('demgo-lang', LANG); } catch (e) {}
+    refreshCats(); refreshSrc(); applyLang();
+  }
+  $('lang-fr').addEventListener('click', function () { setLang('fr'); });
+  $('lang-en').addEventListener('click', function () { setLang('en'); });
+
+  var startLang = 'fr';
+  try { startLang = localStorage.getItem('demgo-lang') === 'en' ? 'en' : 'fr'; } catch (e) {}
+  LANG = startLang; refreshCats(); refreshSrc();
+  buildTops(); buildTabs(); renderDeck();
+  buildSeg('seg-dur', DUR, 'dur', function (v) { return v + ' min'; });
+  buildSeg('seg-cap', CAPS, 'cap', function (v) { return t('capLabel', v); });
+  syncSettings();
+  applyLang();
+})();
+</script>
+</body>
+</html>
